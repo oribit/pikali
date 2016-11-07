@@ -8,12 +8,9 @@ The idea behind this project, it's to give you the possibility to perform a quic
 The project is far from be finished, but I think it's good to start any new idea or critics about it.
 
 These are some screen captures:
+ 
+![Main screen](/screenshots/main.jpg?raw=true "Main screen")
 
-Main screen
-(screenshots/main.jpg)
+![IP menu screen](/screenshots/ip.jpg?raw=true "IP menu screen")
 
-IP menu
-(screenshots/ip.jpg)
-
-Services menu
-(screenshots/services.jpg)
+![Services menu screen](/screenshots/services.jpg?raw=true "Services menu screen")
