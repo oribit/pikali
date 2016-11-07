@@ -9,11 +9,11 @@ The project is far from be finished, but I think it's good to start any new idea
 
 These are some screen captures:
 
-Main screen
-(screenshots/main.jpg)
+Main screen 
+(./screenshots/main.jpg)
 
-IP menu
-(screenshots/ip.jpg)
+IP menu 
+(./screenshots/ip.jpg)
 
 Services menu
-(screenshots/services.jpg)
+(./screenshots/services.jpg)
