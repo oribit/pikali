@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import sys, os, time, subprocess, pygame, threading
+import sys, os, time, pygame, threading
 import RPi.GPIO as GPIO
 import pikali_bag
+import pikali_services
 from pikali_bag import *
 from pygame.locals import *
 
@@ -11,6 +12,10 @@ screen_status=1 # 0 off 1 on
 menu_pos = 1 # Which menu is showing
 ipversion = 'IPv4'
 service_matrix = {}
+# matrix (x, y, width, height, function_to_call)
+matrix = []
+
+
 
 class dataBackground(object):
     #Calculate different data in the background and display it. The update is every 5 seconds.
@@ -39,25 +44,13 @@ class dataBackground(object):
 os.environ["SDL_FBDEV"] = "/dev/fb1"
 os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
 os.environ["SDL_MOUSEDRV"] = "TSLIB"
-#launch_bg=os.environ["MENUDIR"] + "launch-bg.sh"
-#process = subprocess.call(launch_bg, shell=True)
-
-# Initialize pygame modules individually (to avoid ALSA errors) and hide mouse
-pygame.font.init()
-pygame.display.init()
-
-pygame.mouse.set_visible(0)
-
-# matrix (x, y, width, height, function_to_call)
-matrix = []
-
 
 # define function that checks for touch location. Using position matrix for that.
 def on_touch():
     # get the position that was touched
     touch_pos = (pygame.mouse.get_pos() [0], pygame.mouse.get_pos() [1])
-    sys.stderr.write(str("MOUSE X: " + str(pygame.mouse.get_pos()[0]) + " MOUSE Y: " + str(pygame.mouse.get_pos()[1]) +"\n"))
-    sys.stderr.write(str(str(matrix) +"\n"))
+    pdebug(PDEBUG, str("MOUSE X: " + str(pygame.mouse.get_pos()[0]) + " MOUSE Y: " + str(pygame.mouse.get_pos()[1]) +"\n"))
+    pdebug(PDEBUG, str(str(matrix) +"\n"))
     # matrix (x, y, width, height, function_to_call)
     for i in range(len(matrix)):
         x = matrix[i][0]
@@ -67,12 +60,6 @@ def on_touch():
         if x <= touch_pos[0] <= max_x and y <= touch_pos[1] <= max_y:
             button(matrix[i][4])
             break
-
-
-def run_cmd(cmd):
-    process = Popen(cmd.split(), stdout=PIPE)
-    output = process.communicate()[0]
-    return output
 
 def shutdown():
     pygame.quit()
@@ -107,7 +94,7 @@ def button(number):
     global matrix
     global menu_pos, ipversion, service_matrix
 
-    sys.stderr.write("Button: " + str(number) +"\n")
+    pdebug(PDEBUG, "Button: " + str(number) +"\n")
 
     if number == '0':
         menu_pos = 2
@@ -210,14 +197,41 @@ def button(number):
         if number.startswith('services2'):
             print_menu_services(screen, matrix, service_matrix, 2)
         else:
+            if number == 'services_vnc':
+                if service_matrix['vnc'] == 'off':
+                    service_matrix['vnc'] = 'on'
+                    pikali_services.start_service_vnc()
+                else:
+                    service_matrix['vnc'] = 'off'
+                    pikali_services.stop_service_vnc()
+
+            if number == 'services_apache':
+                if service_matrix['apache'] == 'off':
+                    service_matrix['apache'] = 'on'
+                    pikali_services.start_service_apache()
+                else:
+                    service_matrix['apache'] = 'off'
+                    pikali_services.stop_service_apache()
+
+            if number == 'services_pureftp':
+                if service_matrix['pureftp'] == 'off':
+                    service_matrix['pureftp'] = 'on'
+                    pikali_services.start_service_pureftp()
+                else:
+                    service_matrix['pureftp'] = 'off'
+                    pikali_services.stop_service_pureftp()
+
+            time.sleep(1) # Time for starting services
             print_menu_services(screen, matrix, service_matrix, 1)
-        if number == 'services_vnc':
-            print('l')
+#MAIN
 
+PDEBUG = os.environ.get('PIKALIDEBUG') == 'ON'
 
+# Initialize pygame modules individually (to avoid ALSA errors) and hide mouse
+pygame.font.init()
+pygame.display.init()
 
-
-# Set up the base menu you can customize your menu with the colors above
+pygame.mouse.set_visible(0)
 
 #set size of the screen
 size = width, height = 480, 320
@@ -227,7 +241,7 @@ pi_hostname = os.uname()[1]
 background = pygame.image.load("imgs/Kali-Pi-3.5.jpg").convert()
 screen.blit(background, [0,0])
 pygame.display.update()
-init_services(service_matrix)
+pikali_services.init_services(service_matrix)
 time.sleep(2)
 menu_pos = 1
 print_menu1(screen, matrix, pi_hostname)

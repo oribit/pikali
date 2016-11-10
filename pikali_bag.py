@@ -1,6 +1,8 @@
 import pygame, sys
+import pikali_services
 from subprocess import Popen, PIPE
 from pygame.locals import *
+
 
 colors = {}
 # colors                R    G    B
@@ -14,6 +16,19 @@ colors['magenta']  = (255,   0, 255)
 colors['yellow']   = (255, 255,   0)
 colors['orange']   = (255, 127,   0)
 
+def pdebug(PDEBUG, text):
+    if PDEBUG:
+        print sys.stderr.write(text)
+
+def run_cmd(cmd):
+    process = Popen(cmd.split(), stdout=PIPE)
+    output = process.communicate()[0]
+    return output
+
+def run_cmd_shell(cmd):
+    process = Popen(cmd.split(), stdout=PIPE, shell=True)
+    output = process.communicate()[0]
+    return output
 
 def print_measure_data(screen):
     command = "vcgencmd measure_temp"
@@ -141,59 +156,8 @@ def print_menu_net(screen, matrix,ipversion):
                     make_label(screen, "IPv4: " + str(line[1]), 30, hzn, 24, colors['yellow'])
                     hzn+=30
 
-def init_services(service_matrix):
-    service_matrix['hostapd'] = 'off'
-    service_matrix['apache'] = 'off'
-    service_matrix['ftp'] = 'off'
-    service_matrix['vnc'] = 'off'
-    service_matrix['openvas'] = 'off'
-    service_matrix['snort'] = 'off'
-    service_matrix['mysql'] = 'off'
-
-
-def check_service(service_matrix, service='all'):
-
-    # hostapd
-    if service == 'hostapd' or service == 'all':
-        command = 'service hostapd status'
-        process = Popen(command.split(), stdout=PIPE)
-        output = process.communicate()[0]
-        if 'active: active (running)' in output.lower() and not 'active: inactive (dead)' in output.lower():
-            service_matrix['hostapd'] = 'on'
-        else:
-            service_matrix['hostapd'] = 'off'
-    # Apache
-    if service == 'apache' or service == 'all':
-        command = 'service apache2 status'
-        process = Popen(command.split(), stdout=PIPE)
-        output = process.communicate()[0]
-        if 'active: active (running)' in output.lower() and not 'active: inactive (dead)' in output.lower():
-            service_matrix['apache'] = 'on'
-        else:
-            service_matrix['apache'] = 'off'
-
-    # FTP
-    if service == 'pureftp' or service == 'all':
-        command = 'service pure-ftpd status'
-        process = Popen(command.split(), stdout=PIPE)
-        output = process.communicate()[0]
-        if 'active: active (running)' in output.lower() and not 'active: inactive (dead)' in output.lower():
-            service_matrix['ftp'] = 'on'
-        else:
-            service_matrix['ftp'] = 'off'
-
-    # VNC-Server
-    if service == 'vnc' or service == 'all':
-        command = 'ps -ef | grep vnc'
-        process = Popen(command, stdout=PIPE, shell=True)
-        output = process.communicate()[0]
-        if 'vnc :1' in output.lower():
-            service_matrix['vnc'] = 'on'
-        else:
-            service_matrix['vnc'] = 'off'
-
 def print_menu_services(screen, matrix, service_matrix, page):
-    check_service(service_matrix)
+    pikali_services.check_service(service_matrix)
 
     # Background Color
     screen.fill(colors['black'])
@@ -206,13 +170,13 @@ def print_menu_services(screen, matrix, service_matrix, page):
         service_s = 'Hostapd'
     elif page == 2:
         service_s = 'Openvas'
-    matrix.append([5, 10, 60, 60, 'services_' + service_s])
+    matrix.append([5, 10, 200, 60, 'services_' + service_s.lower()])
     iconf = "imgs/" + service_s + ".png"
     iconf = iconf.lower()
     icon = pygame.image.load(iconf)
     icon = pygame.transform.scale(icon, (60, 60))
     screen.blit(icon, [5, 10])
-    if check_service(service_matrix, service_s.lower()) == 'on':
+    if service_matrix[service_s.lower()] == 'on':
         make_label(screen, service_s, 70, 30, 32, colors['green'])
         icon = pygame.image.load("imgs/swon.png")
         icon = pygame.transform.scale(icon, (40, 20))
@@ -226,13 +190,13 @@ def print_menu_services(screen, matrix, service_matrix, page):
         service_s = 'Apache'
     elif page == 2:
         service_s = 'Snort'
-    matrix.append([5, 130, 60, 60, 'services_' + service_s])
+    matrix.append([5, 130, 200, 60, 'services_' + service_s.lower()])
     iconf = "imgs/" + service_s + ".png"
     iconf = iconf.lower()
     icon = pygame.image.load(iconf)
     icon = pygame.transform.scale(icon, (60, 60))
     screen.blit(icon, [5, 130])
-    if check_service(service_matrix, service_s.lower()) == 'on':
+    if service_matrix[service_s.lower()] == 'on':
         make_label(screen, service_s, 70, 150, 32, colors['green'])
         icon = pygame.image.load("imgs/swon.png")
         icon = pygame.transform.scale(icon, (40, 20))
@@ -246,13 +210,13 @@ def print_menu_services(screen, matrix, service_matrix, page):
         service_s = 'PureFTP'
     elif page == 2:
         service_s = 'MYSQL'
-    matrix.append([240, 10, 60, 60, 'services_' + service_s])
+    matrix.append([240, 10, 200, 60, 'services_' + service_s.lower()])
     iconf = "imgs/" + service_s + ".png"
     iconf = iconf.lower()
     icon = pygame.image.load(iconf)
     icon = pygame.transform.scale(icon, (60, 60))
     screen.blit(icon, [240, 10])
-    if check_service(service_matrix, service_s.lower()) == 'on':
+    if service_matrix[service_s.lower()] == 'on':
         make_label(screen, service_s, 305, 30, 32, colors['green'])
         icon = pygame.image.load("imgs/swon.png")
         icon = pygame.transform.scale(icon, (40, 20))
@@ -264,13 +228,13 @@ def print_menu_services(screen, matrix, service_matrix, page):
 
     if page == 1:
         service_s = 'VNC'
-        matrix.append([240, 130, 60, 60, 'services_' + service_s])
+        matrix.append([240, 130, 200, 60, 'services_' + service_s.lower()])
         iconf = "imgs/" + service_s + ".png"
         iconf = iconf.lower()
         icon = pygame.image.load(iconf)
         icon = pygame.transform.scale(icon, (60, 60))
         screen.blit(icon, [240, 130])
-        if check_service(service_matrix, service_s.lower()) == 'on':
+        if service_matrix['vnc'] == 'on':
             make_label(screen, service_s, 305, 150, 32, colors['green'])
             icon = pygame.image.load("imgs/swon.png")
             icon = pygame.transform.scale(icon, (40, 20))
