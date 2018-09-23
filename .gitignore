@@ -1,0 +1,10 @@
+.DS_Store
+.idea
+*.pyc
+alv/
+backup/
+doc/
+old/
+remote/
+__pycache__/
+debug.txt

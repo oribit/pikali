@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 import sys, os, time, pygame, threading
-import RPi.GPIO as GPIO
+
+DARWIN = sys.platform == "darwin"
+
+if not DARWIN:
+    import RPi.GPIO as GPIO
+'''
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    pass
+'''
 import pikali_bag
 import pikali_services
 from pikali_bag import *
@@ -32,11 +42,13 @@ class dataBackground(object):
         thread.start()
 
     def run(self):
+        global DARWIN
         global screen, screen_status, menu_pos
 
         while True:
             if screen_status and menu_pos == 1:
-                print_measure_data(screen)
+                if not DARWIN:
+                    print_measure_data(screen)
             # Always sleep!
             time.sleep(self.interval)
 
@@ -223,6 +235,10 @@ def button(number):
 
             time.sleep(1) # Time for starting services
             print_menu_services(screen, matrix, service_matrix, 1)
+
+    if number == 'menu_wifi':
+        menu_pos = 2
+        print_menu_wifi(screen, matrix)
 #MAIN
 
 PDEBUG = os.environ.get('PIKALIDEBUG') == 'ON'
@@ -231,7 +247,10 @@ PDEBUG = os.environ.get('PIKALIDEBUG') == 'ON'
 pygame.font.init()
 pygame.display.init()
 
-pygame.mouse.set_visible(0)
+if not DARWIN:
+    pygame.mouse.set_visible(0)
+else:
+    pygame.mouse.set_visible(1)
 
 #set size of the screen
 size = width, height = 480, 320
