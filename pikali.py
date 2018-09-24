@@ -70,7 +70,7 @@ def on_touch():
         max_x = x + matrix[i][2]
         max_y = y + matrix[i][3]
         if x <= touch_pos[0] <= max_x and y <= touch_pos[1] <= max_y:
-            button(matrix[i][4])
+            action(matrix[i][4])
             break
 
 def shutdown():
@@ -101,12 +101,12 @@ def screen_on():
 
 
 # Define each button press action
-def button(number):
+def action(number):
     global screen
     global matrix
     global menu_pos, ipversion, service_matrix
 
-    pdebug(PDEBUG, "Button: " + str(number) +"\n")
+    pdebug(PDEBUG, "action: " + str(number) +"\n")
 
     if number == '0':
         menu_pos = 2
@@ -117,11 +117,11 @@ def button(number):
         icon = pygame.transform.scale(icon, (80, 80))
         screen.blit(icon, [10, 10])
         matrix.append([260, 105, 210, 55, 'screenoff'])
-        make_button(screen, "   Screen Off", 260, 105, 210, 55, colors['yellow'])
+        draw_button(screen, "   Screen Off", 260, 105, 210, 55, colors['yellow'])
         matrix.append([260, 180, 210, 55, 'reboot'])
-        make_button(screen, "      Reboot", 260, 180, 210, 55, colors['yellow'])
+        draw_button(screen, "      Reboot", 260, 180, 210, 55, colors['yellow'])
         matrix.append([260, 255, 210, 55, 'shutdown'])
-        make_button(screen, "   Shutdown", 260, 255, 210, 55, colors['yellow'])
+        draw_button(screen, "   Shutdown", 260, 255, 210, 55, colors['yellow'])
 
     if number == 'xwin':
         menu_pos = 2
@@ -132,9 +132,9 @@ def button(number):
         icon = pygame.transform.scale(icon, (80, 80))
         screen.blit(icon, [10, 10])
         matrix.append([30, 230, 210, 55, 'xtft'])
-        make_button(screen, "    X on TFT", 30, 230, 210, 55, colors['yellow'])
+        draw_button(screen, "    X on TFT", 30, 230, 210, 55, colors['yellow'])
         matrix.append([260, 230, 210, 55, 'xhdmi'])
-        make_button(screen, "   X on HDMI", 260, 230, 210, 55, colors['yellow'])
+        draw_button(screen, "   X on HDMI", 260, 230, 210, 55, colors['yellow'])
 
     if number == 'xtft':
         # X TFT
@@ -202,7 +202,16 @@ def button(number):
                 ipversion = 'IPv6'
             else:
                 ipversion = 'IPv4'
-        print_menu_net(screen, matrix, ipversion)
+
+        if number == 'netinfo_wifi':
+            print_menu_wifi(screen, matrix)
+        elif number.startswith('netinfo_wlan'):
+            if 'config' in number:
+                print_menu_wifi_config(screen, matrix, number.split('_')[1])
+            else:
+                print_menu_wifi_wlan(screen, matrix, number.split('_')[1])
+        else:
+            print_menu_net(screen, matrix, ipversion)
 
     if number.startswith('services'):
         menu_pos = 2
@@ -236,10 +245,16 @@ def button(number):
             time.sleep(1) # Time for starting services
             print_menu_services(screen, matrix, service_matrix, 1)
 
-    if number == 'menu_wifi':
-        menu_pos = 2
-        print_menu_wifi(screen, matrix)
-#MAIN
+    if number.startswith('sellist'):
+        refresh_selection_list(screen, matrix, number.split('-')[1])
+
+
+####################################################################
+#                                                                  #
+#                               MAIN                               #
+#                                                                  #
+####################################################################
+
 
 PDEBUG = os.environ.get('PIKALIDEBUG') == 'ON'
 
@@ -264,6 +279,8 @@ pikali_services.init_services(service_matrix)
 time.sleep(2)
 menu_pos = 1
 print_menu1(screen, matrix, pi_hostname)
+#lista = ['0123456789', 'test2', 'TESTING3', 'test4', 'test5', 'test6', 'test7']
+#draw_selection_list(screen, matrix, lista, 0, 10, 10, 150, pikali_bag.colors['blue'])
 
 # Recollecting and printing data in background
 dataBackground()
@@ -294,5 +311,5 @@ while 1:
                     pygame.quit()
                     sys.exit()
     pygame.display.update()
-    ## Reduce CPU utilisation
+    ## Reduce CPU utilization
     time.sleep(0.1)
