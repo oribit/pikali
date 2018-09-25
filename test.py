@@ -42,6 +42,7 @@ def draw_dropdown(number, screen, matrix, drop_list, xpo, ypo, width, colour):
         pygame.draw.rect(screen, colour, (xpo, ypo, width - 1, height - 1), 1)
 '''
 
+from vkeyboard import *
 
 pygame.font.init()
 pygame.display.init()
@@ -49,14 +50,23 @@ pygame.display.init()
 size = width, height = 480, 320
 screen = pygame.display.set_mode(size)
 
+def consumer(text):
+    print('Current text : %s' % text)
 
-lista = ['0123456789', 'test2', 'TESTING3', 'test4', 'test5']
+# Initializes and activates vkeyboard
+layout = VKeyboardLayout(VKeyboardLayout.AZERTY)
+keyboard = VKeyboard(screen, consumer, layout)
+keyboard.enable()
 
-pikali_bag.draw_selection_list(screen, lista, 10, 10, 150, pikali_bag.colors['blue'])
+
+#lista = ['0123456789', 'test2', 'TESTING3', 'test4', 'test5']
+
+#pikali_bag.draw_selection_list(screen, lista, 10, 10, 150, pikali_bag.colors['blue'])
 
 while 1:
     for event in pygame.event.get():
         #ensure there is always a safe way to end the program if the touch screen fails
+        keyboard.on_event(event)
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 pygame.quit()
