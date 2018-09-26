@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE
 
 def init_services(service_matrix):
     service_matrix['hostapd'] = 'off'
+    service_matrix['dnsmasq'] = 'off'
     service_matrix['apache'] = 'off'
     service_matrix['pureftp'] = 'off'
     service_matrix['vnc'] = 'off'
@@ -14,13 +15,24 @@ def init_services(service_matrix):
 def check_service(service_matrix, service='all'):
     # hostapd
     if service == 'hostapd' or service == 'all':
-        command = 'service hostapd status'
-        process = Popen(command.split(), stdout=PIPE)
+        process = Popen(('ps', '-A'), stdout=PIPE)
         output = process.communicate()[0]
-        if 'active: active (running)' in output.lower() and not 'active: inactive (dead)' in output.lower():
-            service_matrix['hostapd'] = 'on'
-        else:
-            service_matrix['hostapd'] = 'off'
+        service_matrix['hostapd'] = 'off'
+        for line in output.split('\n'):
+            if 'hostapd' in line.split():
+                service_matrix['hostapd'] = 'on'
+                break
+
+    # dnsmasq
+    if service == 'dnsmasq' or service == 'all':
+        process = Popen(('ps', '-A'), stdout=PIPE)
+        output = process.communicate()[0]
+        service_matrix['dnsmasq'] = 'off'
+        for line in output.split('\n'):
+            if 'dnsmasq' in line.split():
+                service_matrix['dnsmasq'] = 'on'
+                break
+
     # Apache
     if service == 'apache' or service == 'all':
         command = '/usr/sbin/service apache2 status'
@@ -50,6 +62,12 @@ def check_service(service_matrix, service='all'):
             service_matrix['vnc'] = 'on'
         else:
             service_matrix['vnc'] = 'off'
+
+def start_service_dnsmasq():
+    pikali_bag.run_cmd("/usr/sbin/service dnsmasq start")
+
+def stop_service_dnsmasq():
+    pikali_bag.run_cmd("/usr/sbin/service dnsmasq stop")
 
 def start_service_vnc():
     pikali_bag.run_cmd("/usr/bin/vncserver :1")

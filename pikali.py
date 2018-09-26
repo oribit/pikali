@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import sys, os, time, pygame, threading
+import sys, os, time, threading, signal
+import pygame
 import subprocess
 
 RASPB = 'arm' in os.uname()[4]
@@ -87,6 +88,16 @@ def restart():
     sys.exit()
 
 
+def kill_process(process_name):
+    process = Popen(('ps', '-A'), stdout=PIPE)
+    output = process.communicate()[0]
+    for line in output.split('\n'):
+        line = line.split()
+        if process_name in line:
+            pid = int(line[0])
+            os.kill(pid, signal.SIGKILL)
+
+
 def screen_off():
     global screen_status
     screen_status = 0
@@ -106,7 +117,7 @@ def screen_on():
 
 def refresh():
     pygame.quit()
-    sys.exit(33)
+    sys.exit()
 
 
 def connect_wifi(wlan):
@@ -155,6 +166,64 @@ def connect_wifi2(wlan, essid):
     print output
     time.sleep(2)
 
+
+def launch_host_apd(secure):
+    global screen, menu_pos
+
+    ssid = screen.keyboard_text
+    data = ('interface=wlan1\n' +
+            'driver=nl80211\n' +
+            'ssid=' + ssid + '\n'
+            'hw_mode=g\n' +
+            'channel=6\n')
+
+    if secure:
+        menu_pos = 100
+        screen.print_entry_data('INTRODUCE PASSWORD FOR SSID: ' + ssid, 'netinfo_hostapd_pass2_' + ssid, 'netinfo')
+    else:
+        hostapd_file = open('/tmp/hostapd.conf', 'w')
+        hostapd_file.write(data)
+        hostapd_file.close()
+        command = 'hostapd -B /tmp/hostapd.conf'
+        output = run_cmd_shell(command)
+        print output
+
+
+def launch_host_apd2(ssid):
+    global screen
+
+    passwd = screen.keyboard_text
+    data = ('interface=wlan1\n' +
+            'driver=nl80211\n' +
+            'ssid=' + ssid + '\n'
+            'hw_mode=g\n' +
+            'channel=6\n' +
+            'auth_algs=1\n' +
+            'wpa=2\n' +
+            'wpa_passphrase=' + passwd + '\n')
+    hostapd_file = open('/tmp/hostapd.conf', 'w')
+    hostapd_file.write(data)
+    hostapd_file.close()
+    for i in xrange(0, 2):
+        # Let's try two times in case it didn't work first time
+        command = 'hostapd -B /tmp/hostapd.conf'
+        output = run_cmd_shell(command)
+        print output
+        if 'AP-ENABLED' in output:
+            break
+
+
+def run_iptables(enabled):
+    if enabled:
+        process = Popen(('sh', 'iptables.hostapd'), stdout=PIPE)
+        output = process.communicate()[0]
+        print output
+    else:
+        process = Popen(('iptables', '-F'), stdout=PIPE)
+        output = process.communicate()[0]
+        print output
+
+
 def execute_action(number):
     """
     Define each possible action after screen interaction
@@ -168,7 +237,7 @@ def execute_action(number):
 
     screen.pdebug("action: " + str(number) +"\n")
 
-    print 'ATLETI:', action
+    print 'ACTION:', action
 
     if number == '0':
         menu_pos = 2
@@ -215,7 +284,7 @@ def execute_action(number):
         # exit
         pygame.quit()
         #process = subprocess.call("setterm -term linux -back default -fore white -clear all", shell=True)
-        sys.exit()
+        sys.exit(33)
 
     if number == 'screenoff':
         menu_pos = 0
@@ -236,6 +305,9 @@ def execute_action(number):
 
     if number.startswith('netinfo'):
         menu_pos = 2
+        '''
+        This needs to be rebuilt
+        
         if number == 'netinfo_kismet':
             pygame.quit()
             subprocess.call("/usr/bin/kismet")
@@ -249,6 +321,7 @@ def execute_action(number):
             output = process.communicate()[0]
             os.execv(__file__, sys.argv)
             sys.exit()
+        '''
 
         if number == 'netinfo_refresh_ip':
             if ipversion == 'IPv4':
@@ -256,7 +329,7 @@ def execute_action(number):
             else:
                 ipversion = 'IPv4'
 
-        if number == 'netinfo_wifi':
+        elif number == 'netinfo_wifi':
             screen.print_menu_wifi()
         elif number.startswith('netinfo_wlan'):
             if 'config' in number:
@@ -270,6 +343,30 @@ def execute_action(number):
                 screen.print_menu_wifi()
             else:
                 screen.print_menu_wifi_wlan(number.split('_')[1])
+        elif number.startswith('netinfo_hostapd'):
+            if 'pass2' in number:
+                # Format is 'netinfo_hostapd_pass2_' + ssid
+                launch_host_apd2(''.join(number.split('_')[3:]))
+                screen.print_menu_net()
+            elif 'pass' in number:
+                screen.print_menu_hostapd()
+            elif 'open' in number:
+                launch_host_apd(False)
+                screen.print_menu_net()
+            elif 'secure' in number:
+                launch_host_apd(True)
+            else:
+                menu_pos = 100
+                screen.print_entry_data('INTRODUCE SSID NAME', 'netinfo_hostapd_pass', 'netinfo')
+        elif number.startswith('netinfo_iptables'):
+            if 'enable' in number:
+                run_iptables(True)
+                screen.print_menu_net(ipversion)
+            elif 'disable' in number:
+                run_iptables(False)
+                screen.print_menu_net(ipversion)
+            else:
+                screen.print_menu_iptables()
         else:
             screen.print_menu_net(ipversion)
 
@@ -285,22 +382,32 @@ def execute_action(number):
                 else:
                     service_matrix['vnc'] = 'off'
                     pikali_services.stop_service_vnc()
-
-            if number == 'services_apache':
+            elif number == 'services_apache':
                 if service_matrix['apache'] == 'off':
                     service_matrix['apache'] = 'on'
                     pikali_services.start_service_apache()
                 else:
                     service_matrix['apache'] = 'off'
                     pikali_services.stop_service_apache()
-
-            if number == 'services_pureftp':
+            elif number == 'services_pureftp':
                 if service_matrix['pureftp'] == 'off':
                     service_matrix['pureftp'] = 'on'
                     pikali_services.start_service_pureftp()
                 else:
                     service_matrix['pureftp'] = 'off'
                     pikali_services.stop_service_pureftp()
+            elif number == 'services_hostapd':
+                if service_matrix['hostapd'] == 'on':
+                    service_matrix['hostapd'] = 'off'
+                    kill_process('hostapd')
+            elif number == 'services_dnsmasq':
+                if service_matrix['dnsmasq'] == 'off':
+                    service_matrix['dnsmasq'] = 'on'
+                    pikali_services.start_service_dnsmasq()
+                else:
+                    service_matrix['dnsmasq'] = 'off'
+                    pikali_services.stop_service_dnsmasq()
+
 
             time.sleep(1) # Time for starting services
             screen.print_menu_services(service_matrix, 1)

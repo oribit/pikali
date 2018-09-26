@@ -193,7 +193,7 @@ class Screen:
         self.draw_image_touch('imgs/metasploit.png', 'metasploit', (30, 180), (80, 80))
         self.draw_image_touch('imgs/nmap_logo.png', 'nmap', (120, 180), (80, 80))
 
-    def print_menu_net(self, ipversion):
+    def print_menu_net(self, ipversion='IPv4'):
         """
         Print network menu
 
@@ -204,8 +204,10 @@ class Screen:
         self.draw_image_touch('imgs/back.png', 'menu1', (10, 10), (80, 80))
         self.draw_image_touch('imgs/ipv4ipv6.png', 'netinfo_refresh_ip', (390, 10), (80, 60))
         self.draw_image_touch('imgs/wifi.png', 'netinfo_wifi', (390, 80), (60, 60))
-        self.draw_image_touch('imgs/kismet.png', 'netinfo_kismet', (390, 160), (60, 70))
-        self.draw_image_touch('imgs/sdr.png', 'netinfo_sdr', (390, 240), (60, 70))
+        self.draw_image_touch('imgs/hostapd.png', 'netinfo_hostapd', (390, 160), (60, 60))
+        self.draw_image_touch('imgs/iptables.png', 'netinfo_iptables', (390, 240), (80, 80))
+        #self.draw_image_touch('imgs/kismet.png', 'netinfo_kismet', (390, 160), (60, 70))
+        #self.draw_image_touch('imgs/sdr.png', 'netinfo_sdr', (390, 240), (60, 70))
 
         # Printing IP
         command = 'ip addr | grep "inet\|BROAD" | grep -v "127.0.0.1\|::1/128"'
@@ -255,7 +257,7 @@ class Screen:
         self.surface.blit(icon, [180, 30])
 
         if page == 1:
-            service_s = 'Apache'
+            service_s = 'DNSMasq'
         elif page == 2:
             service_s = 'Snort'
         self.matrix.append([5, 130, 200, 60, 'services_' + service_s.lower()])
@@ -275,22 +277,24 @@ class Screen:
         self.surface.blit(icon, [180, 150])
 
         if page == 1:
+            service_s = 'Apache'
+        elif page == 2:
             service_s = 'PureFTP'
-            self.matrix.append([240, 10, 200, 60, 'services_' + service_s.lower()])
-            iconf = "imgs/" + service_s + ".png"
-            iconf = iconf.lower()
-            icon = pygame.image.load(iconf)
-            icon = pygame.transform.scale(icon, (60, 60))
-            self.surface.blit(icon, [240, 10])
-            if service_matrix[service_s.lower()] == 'on':
-                self.draw_label(service_s, 305, 30, 32, colors['green'])
-                icon = pygame.image.load("imgs/swon.png")
-                icon = pygame.transform.scale(icon, (40, 20))
-            else:
-                self.draw_label(service_s, 305, 30, 32, colors['red'])
-                icon = pygame.image.load("imgs/swoff.png")
-                icon = pygame.transform.scale(icon, (40, 20))
-            self.surface.blit(icon, [415, 30])
+        self.matrix.append([240, 10, 200, 60, 'services_' + service_s.lower()])
+        iconf = "imgs/" + service_s + ".png"
+        iconf = iconf.lower()
+        icon = pygame.image.load(iconf)
+        icon = pygame.transform.scale(icon, (60, 60))
+        self.surface.blit(icon, [240, 10])
+        if service_matrix[service_s.lower()] == 'on':
+            self.draw_label(service_s, 305, 30, 32, colors['green'])
+            icon = pygame.image.load("imgs/swon.png")
+            icon = pygame.transform.scale(icon, (40, 20))
+        else:
+            self.draw_label(service_s, 305, 30, 32, colors['red'])
+            icon = pygame.image.load("imgs/swoff.png")
+            icon = pygame.transform.scale(icon, (40, 20))
+        self.surface.blit(icon, [415, 30])
 
         if page == 1:
             service_s = 'VNC'
@@ -456,6 +460,50 @@ class Screen:
         essid_list.append(essid)
         extra_data[essid] = t_data
         self.draw_selection_list(essid_list, extra_data, 10, 80, 460, colors['blue'])
+
+    def print_menu_hostapd(self):
+        """
+        Menu to choose if hostapd should be configured with WPA2 or not
+        :return:
+        """
+        self.clear_screen()
+        self.draw_image_touch('imgs/back.png', 'netinfo', (10, 10), (80, 80))
+        self.draw_image_touch('imgs/hostapd.png', 'netinfo_hostapd_open', (120, 120), (80, 80))
+        self.draw_label('open', 125, 210, 32, colors['green'])
+        self.draw_image_touch('imgs/hostapd.png', 'netinfo_hostapd_secure', (320, 120), (80, 80))
+        self.draw_label('WPA2', 325, 210, 32, colors['green'])
+
+    def print_menu_iptables(self):
+        """
+        Print menu for iptables
+
+        :return:
+        """
+        command = 'iptables -L'
+        process = Popen(command, stdout=PIPE, shell=True)
+        output = process.communicate()[0]
+        number_entries = {}
+        chain = ''
+        for line in output.split('\n'):
+            line = line.lower()
+            if 'chain' in line:
+                chain = line.split()[1]
+                number_entries[chain] = 0
+            elif 'target' not in line:
+                number_entries[chain] += 1
+
+        self.clear_screen()
+        self.draw_image_touch('imgs/back.png', 'netinfo', (10, 10), (80, 80))
+        hzn = 100
+        for k, v in number_entries.iteritems():
+            self.draw_label('Entries chain ' + k.upper() + ': ' + str(v), 10, hzn, 22, colors['yellow'] )
+            hzn += 22
+
+        self.draw_image_touch('imgs/iptables.png', 'netinfo_iptables_enable', (120, 220), (80, 80))
+        self.draw_label('Enable', 125, 300, 32, colors['green'])
+        self.draw_image_touch('imgs/iptables.png', 'netinfo_iptables_disable', (320, 220), (80, 80))
+        self.draw_label('Disable', 325, 300, 32, colors['green'])
+
 
     def draw_selection_list(self, list_data, extra_data, xpo, ypo, width, color):
         if 'sel_list' in self.widget:
