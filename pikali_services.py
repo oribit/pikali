@@ -1,5 +1,4 @@
 import sys
-import pikali_bag
 from subprocess import Popen, PIPE
 
 def init_services(service_matrix):
