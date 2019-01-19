@@ -372,7 +372,8 @@ class Screen:
             if line.startswith('wlan'):
                 wlan = line.split(' ')[0].strip()
                 wlan_d[wlan] = {}
-                wlan_d[wlan]['essid'] = line.split('ESSID')[1][2:-1]
+                if 'ESSID' in line:
+                    wlan_d[wlan]['essid'] = line.split('ESSID')[1][2:-1]
             if 'Frequency' in line:
                 t_line = line.split(' ')
                 wlan_d[wlan]['frequency'] = ''.join([x for x in t_line if x.startswith('Frequency')]).split(':')[1]

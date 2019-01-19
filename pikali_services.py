@@ -1,6 +1,18 @@
 import sys
 from subprocess import Popen, PIPE
 
+def run_cmd(cmd):
+    process = Popen(cmd.split(), stdout=PIPE)
+    output = process.communicate()[0]
+    return output
+
+
+def run_cmd_shell(cmd):
+    process = Popen(cmd, stdout=PIPE, shell=True)
+    output = process.communicate()[0]
+    return output
+
+
 def init_services(service_matrix):
     service_matrix['hostapd'] = 'off'
     service_matrix['dnsmasq'] = 'off'
@@ -63,25 +75,25 @@ def check_service(service_matrix, service='all'):
             service_matrix['vnc'] = 'off'
 
 def start_service_dnsmasq():
-    pikali_bag.run_cmd("/usr/sbin/service dnsmasq start")
+    run_cmd("/usr/sbin/service dnsmasq start")
 
 def stop_service_dnsmasq():
-    pikali_bag.run_cmd("/usr/sbin/service dnsmasq stop")
+    run_cmd("/usr/sbin/service dnsmasq stop")
 
 def start_service_vnc():
-    pikali_bag.run_cmd("/usr/bin/vncserver :1")
+    run_cmd("/usr/bin/vncserver :1")
 
 def stop_service_vnc():
-    pikali_bag.run_cmd("/usr/bin/vncserver -kill :1")
+    run_cmd("/usr/bin/vncserver -kill :1")
 
 def start_service_apache():
-    pikali_bag.run_cmd("/usr/sbin/service apache2 start")
+    run_cmd("/usr/sbin/service apache2 start")
 
 def stop_service_apache():
-    pikali_bag.run_cmd("/usr/sbin/service apache2 stop")
+    run_cmd("/usr/sbin/service apache2 stop")
 
 def start_service_pureftp():
-    pikali_bag.run_cmd("/usr/sbin/service pure-ftpd start")
+    run_cmd("/usr/sbin/service pure-ftpd start")
 
 def stop_service_pureftp():
-    pikali_bag.run_cmd("/usr/sbin/service pure-ftpd stop")
+    run_cmd("/usr/sbin/service pure-ftpd stop")

@@ -63,28 +63,15 @@ os.environ["SDL_MOUSEDEV"] = "/dev/input/touchscreen"
 os.environ["SDL_MOUSEDRV"] = "TSLIB"
 
 
-def run_cmd(cmd):
-    process = Popen(cmd.split(), stdout=PIPE)
-    output = process.communicate()[0]
-    return output
-
-
-def run_cmd_shell(cmd):
-    process = Popen(cmd, stdout=PIPE, shell=True)
-    output = process.communicate()[0]
-    return output
-
-
-
 def shutdown():
     pygame.quit()
-    run_cmd("/usr/bin/sudo /sbin/shutdown -h now")
+    pikali_services.run_cmd("/usr/bin/sudo /sbin/shutdown -h now")
     sys.exit()
 
 
 def restart():
     pygame.quit()
-    run_cmd("/usr/bin/sudo /sbin/shutdown -r now")
+    pikali_services.run_cmd("/usr/bin/sudo /sbin/shutdown -r now")
     sys.exit()
 
 
@@ -136,7 +123,7 @@ def connect_wifi(wlan):
         screen.print_entry_data('Introduce password', 'netinfo_' + wlan + '_wifipass_' + essid, 'netinfo_' + wlan + '_config')
     else:
         command = 'iwconfig ' + wlan + ' essid ' + essid
-        output = run_cmd_shell(command)
+        output = pikali_services.run_cmd_shell(command)
 
 
 def connect_wifi2(wlan, essid):
@@ -158,11 +145,11 @@ def connect_wifi2(wlan, essid):
     wpa_file.close()
 
     command = 'wpa_supplicant -B -D wext -i {} -c /tmp/wpa_supplicant.conf'.format(wlan)
-    output = run_cmd_shell(command)
+    output = pikali_services.run_cmd_shell(command)
     print output
     time.sleep(2)
     command = 'dhclient {}'.format(wlan)
-    output = run_cmd_shell(command)
+    output = pikali_services.run_cmd_shell(command)
     print output
     time.sleep(2)
 
@@ -185,7 +172,7 @@ def launch_host_apd(secure):
         hostapd_file.write(data)
         hostapd_file.close()
         command = 'hostapd -B /tmp/hostapd.conf'
-        output = run_cmd_shell(command)
+        output = pikali_services.run_cmd_shell(command)
         print output
 
 
@@ -207,7 +194,7 @@ def launch_host_apd2(ssid):
     for i in xrange(0, 2):
         # Let's try two times in case it didn't work first time
         command = 'hostapd -B /tmp/hostapd.conf'
-        output = run_cmd_shell(command)
+        output = pikali_services.run_cmd_shell(command)
         print output
         if 'AP-ENABLED' in output:
             break
